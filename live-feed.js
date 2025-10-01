@@ -10,7 +10,7 @@ const MAX_TOKENS_IN_MEMORY = 200;
 
 // Supabase config
 const SUPABASE_URL = 'https://ghtecnfzvazguhtrqxgf.supabase.co';
-const SUPABASE_KEY = 'YOUR_SUPABASE_SERVICE_ROLE_KEY'; // use service role key on server
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdodGVjbmZ6dmF6Z3VodHJxeGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNDU1MDAsImV4cCI6MjA3NDcyMTUwMH0.yuSckFtSjXmCelJFRjhUHyVvtaXIaK4dlLXnGPCVDJk'; // use service role key on server
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let liveTokens = []; // in-memory storage
