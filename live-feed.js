@@ -4,18 +4,16 @@ const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const POLL_INTERVAL = 5000; // 5 seconds
-const MAX_TOKENS_IN_MEMORY = 200; // keep only latest N tokens
+const POLL_INTERVAL = 5000;
+const MAX_TOKENS_IN_MEMORY = 200;
 
 // Supabase config
 const SUPABASE_URL = 'https://ghtecnfzvazguhtrqxgf.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdodGVjbmZ6dmF6Z3VodHJxeGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNDU1MDAsImV4cCI6MjA3NDcyMTUwMH0.yuSckFtSjXmCelJFRjhUHyVvtaXIaK4dlLXnGPCVDJk';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Memory store for live tokens
 let liveTokens = [];
 
-// Function to fetch latest tokens from Pump.fun backend
 async function fetchLatestTokens() {
     try {
         const url = 'https://advanced-api-v2.pump.fun/coins/list?sortBy=creationTime&limit=50';
@@ -28,27 +26,33 @@ async function fetchLatestTokens() {
             for (const token of tokens) {
                 const exists = liveTokens.find(t => t.coinMint === token.coinMint);
                 if (!exists) {
-                    liveTokens.unshift({ ...token, fetchedAt: Date.now() });
+                    // Flatten token for Supabase & feed
+                    const tokenForFeed = {
+                        coinMint: token.coinMint,
+                        name: token.name,
+                        ticker: token.symbol,
+                        creationTime: new Date(token.creationTime).toISOString(),
+                        imageUrl: token.imageUrl,
+                        marketCap: token.marketCap,
+                        volume: token.volume,
+                        twitter: token.twitter || null,
+                        telegram: token.telegram || null,
+                        website: token.website || null,
+                        rawData: token
+                    };
+
+                    liveTokens.unshift({ ...tokenForFeed, fetchedAt: Date.now() });
                     newCount++;
 
-                    // Save to Supabase (creationTime as ISO string)
+                    // Upsert to Supabase
                     const { error } = await supabase
                         .from('tokens')
-                        .upsert(
-                            {
-                                coinMint: token.coinMint,
-                                name: token.name,
-                                symbol: token.symbol,
-                                creationTime: new Date(token.creationTime).toISOString(),
-                                rawData: token
-                            },
-                            { onConflict: ['coinMint'] }
-                        );
+                        .upsert(tokenForFeed, { onConflict: ['coinMint'] });
                     if (error) console.error('❌ Supabase insert error:', error.message);
                 }
             }
 
-            // Keep only newest MAX_TOKENS_IN_MEMORY tokens
+            // Keep only newest N tokens
             if (liveTokens.length > MAX_TOKENS_IN_MEMORY) {
                 liveTokens = liveTokens.slice(0, MAX_TOKENS_IN_MEMORY);
             }
@@ -62,9 +66,9 @@ async function fetchLatestTokens() {
 
 // Polling loop
 setInterval(fetchLatestTokens, POLL_INTERVAL);
-fetchLatestTokens(); // initial fetch
+fetchLatestTokens();
 
-// API endpoint for frontend to get live tokens
+// Frontend API endpoint
 app.get('/live-tokens', (req, res) => {
     res.json({
         timestamp: new Date().toISOString(),
@@ -73,6 +77,4 @@ app.get('/live-tokens', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Live feed server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Live feed server running on http://localhost:${PORT}`));
