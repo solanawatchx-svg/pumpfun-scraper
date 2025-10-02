@@ -23,7 +23,8 @@ app.get("/image-proxy", async (req, res) => {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         "Accept": "image/webp,image/apng,image/*,*/*;q=0.8"
-      }
+      },
+      redirect: "follow"
     });
 
     const contentType = response.headers.get("content-type") || "image/png";
