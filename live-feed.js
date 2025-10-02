@@ -35,7 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 coinMint: t.coinMint,
                 name: t.name,
                 ticker: t.ticker,
-                imageUrl: t.imageUrl,
+                imageUrl: t.imageUrl
+                    ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.imageUrl)}`
+                    : null,
                 marketCap: t.marketCap,
                 volume: t.volume,
                 twitter: t.twitter,
