@@ -20,14 +20,23 @@ app.get("/image-proxy", async (req, res) => {
     let targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).send("Missing url param");
 
-    // If it's an images.pump.fun URL, extract the actual source
     const urlObj = new URL(targetUrl);
-    if (urlObj.hostname === "images.pump.fun") {
-      const srcParam = urlObj.searchParams.get("src");
-      if (srcParam) targetUrl = srcParam;
+
+    // Prefer 'src' parameter if present
+    if (urlObj.searchParams.get("src")) {
+      targetUrl = urlObj.searchParams.get("src");
+    } else if (urlObj.searchParams.get("ipfs")) {
+      const ipfsHash = urlObj.searchParams.get("ipfs");
+      targetUrl = `https://ipfs.io/ipfs/${ipfsHash}`;
     }
 
-    const response = await fetch(targetUrl, { redirect: "follow" });
+    const response = await fetch(targetUrl, {
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      }
+    });
+
     if (!response.ok) return res.status(500).send("Failed to fetch image");
 
     const contentType = response.headers.get("content-type") || "image/png";
@@ -38,6 +47,7 @@ app.get("/image-proxy", async (req, res) => {
     res.status(500).send("Image proxy failed");
   }
 });
+
 
 
 
