@@ -16,16 +16,19 @@ const ENDPOINTS = {
 // ===============================
 app.get("/image-proxy", async (req, res) => {
   try {
-    const targetUrl = req.query.url;
+    // Use 'src' if provided (for pump.fun IPFS images)
+    const targetUrl = req.query.src || req.query.url;
     if (!targetUrl) return res.status(400).send("Missing url param");
 
     const response = await fetch(targetUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept": "image/webp,image/apng,image/*,*/*;q=0.8"
+        "Accept": "*/*"
       },
       redirect: "follow"
     });
+
+    if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
 
     const contentType = response.headers.get("content-type") || "image/png";
     res.set("Content-Type", contentType);
@@ -35,6 +38,7 @@ app.get("/image-proxy", async (req, res) => {
     res.status(500).send("Image proxy failed");
   }
 });
+
 
 // ===============================
 // --- LIVE TOKENS ENDPOINT ---
