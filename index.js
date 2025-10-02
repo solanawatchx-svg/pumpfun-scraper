@@ -14,30 +14,31 @@ const ENDPOINTS = {
 // ===============================
 // --- IMAGE PROXY ---
 // ===============================
+// Image proxy endpoint
 app.get("/image-proxy", async (req, res) => {
   try {
-    // Use 'src' if provided (for pump.fun IPFS images)
-    const targetUrl = req.query.src || req.query.url;
+    let targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).send("Missing url param");
 
-    const response = await fetch(targetUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept": "*/*"
-      },
-      redirect: "follow"
-    });
+    // If it's an images.pump.fun URL, extract the actual source
+    const urlObj = new URL(targetUrl);
+    if (urlObj.hostname === "images.pump.fun") {
+      const srcParam = urlObj.searchParams.get("src");
+      if (srcParam) targetUrl = srcParam;
+    }
 
-    if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+    const response = await fetch(targetUrl, { redirect: "follow" });
+    if (!response.ok) return res.status(500).send("Failed to fetch image");
 
     const contentType = response.headers.get("content-type") || "image/png";
     res.set("Content-Type", contentType);
     response.body.pipe(res);
   } catch (err) {
-    console.error("❌ Image proxy error:", err.message);
+    console.error("Image proxy error:", err.message);
     res.status(500).send("Image proxy failed");
   }
 });
+
 
 
 // ===============================
