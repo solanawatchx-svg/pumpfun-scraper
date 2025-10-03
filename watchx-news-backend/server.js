@@ -1,12 +1,10 @@
-require('dotenv').config();
-
---------------
-// WatchX Backend (CommonJS)
-// ---------------------------
+// server.js (CommonJS)
 const express = require("express");
 const fs = require("fs");
 const axios = require("axios");
 const path = require("path");
+require('dotenv').config();
+
 
 const app = express();
 app.use(express.json());
