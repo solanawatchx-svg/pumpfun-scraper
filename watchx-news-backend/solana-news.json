@@ -1,0 +1,20 @@
+[
+  {
+    "title": "Solana Labs Unveils New Network Performance Optimizations",
+    "content": "Solana Labs has announced a suite of new updates aimed at further enhancing network stability and transaction processing speeds. These optimizations are expected to improve user experience across the board, particularly during peak demand.",
+    "source_url": "https://solana.com/news/performance-update",
+    "event_date": "2024-07-25"
+  },
+  {
+    "title": "Solana DeFi Ecosystem Sees Significant TVL Surge",
+    "content": "The total value locked (TVL) on Solana's decentralized finance (DeFi) protocols has experienced a notable increase over the past month, signaling growing user confidence and activity. This surge is attributed to innovative new dApp launches and attractive staking opportunities within the ecosystem.",
+    "source_url": "https://defillama.com/chain/Solana",
+    "event_date": "2024-07-24"
+  },
+  {
+    "title": "Major Gaming Studio Announces Solana Integration for Upcoming Title",
+    "content": "A prominent gaming studio has revealed plans to integrate Solana blockchain technology into its highly anticipated new game, leveraging its low transaction costs and high throughput. This move is set to bring a new wave of Web3 gaming experiences to the Solana ecosystem.",
+    "source_url": "https://solana.com/news/gaming-integration",
+    "event_date": "2024-07-23"
+  }
+]

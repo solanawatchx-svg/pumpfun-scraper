@@ -2,4 +2,9 @@ node_modules/
 out.json
 .env
 .DS_Store
-watchx/node_modules
+
+# Environment & cache
+.env
+watchx-news-backend/.env
+watchx-news-backend/cache.json
+watchx-news-backend/node_modules
