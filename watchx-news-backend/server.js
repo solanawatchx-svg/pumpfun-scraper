@@ -1,9 +1,8 @@
-import express from "express";
-import fs from "fs";
-import fetch from "node-fetch";
-import dotenv from "dotenv";
-
-dotenv.config();
+// --- WatchX News Backend (CommonJS version) ---
+const express = require("express");
+const fs = require("fs");
+const fetch = require("node-fetch");
+require("dotenv").config();
 
 const app = express();
 app.use(express.json());
@@ -51,7 +50,7 @@ Return ONLY a valid JSON array, no extra text or formatting.
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${GEMINI_API_KEY}`
+        "Authorization": "Bearer " + GEMINI_API_KEY
       },
       body: JSON.stringify({
         model: "gemini-2.5-flash",
@@ -65,7 +64,7 @@ Return ONLY a valid JSON array, no extra text or formatting.
     console.log(JSON.stringify(data, null, 2));
     console.log("=========================");
 
-    if (data.choices && data.choices[0]?.message?.content) {
+    if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
       let content = data.choices[0].message.content;
 
       // Remove ```json or ``` wrappers
