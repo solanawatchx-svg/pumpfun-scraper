@@ -1,4 +1,6 @@
-// ---------------------------
+require('dotenv').config();
+
+--------------
 // WatchX Backend (CommonJS)
 // ---------------------------
 const express = require("express");
