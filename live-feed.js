@@ -124,34 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return card;
     }
 
-    // --- start polling for tokens ---
+    // --- start polling ---
     fetchLiveTokens();
     setInterval(fetchLiveTokens, POLLING_INTERVAL_MS);
-
-    // ===============================
-    // --- LIVE SOL PRICE FEED ---
-    // ===============================
-    const SOL_PRICE_INTERVAL_MS = 4000; // 4 seconds
-    const solPriceElement = document.getElementById('sol-price');
-
-    async function fetchSolPrice() {
-        try {
-            // If you want to use your backend proxy, change the URL to '/sol-price'
-            const response = await fetch('https://frontend-api-v3.pump.fun/sol-price');
-            if (!response.ok) throw new Error('Failed to fetch SOL price');
-
-            const { price } = await response.json();
-            // Format to 2 decimal places
-            if (solPriceElement) {
-                solPriceElement.textContent = `$${(+price).toFixed(2)}`;
-            }
-        } catch (err) {
-            console.error("❌ SOL Price Fetch Error:", err);
-            if (solPriceElement) solPriceElement.textContent = "N/A";
-        }
-    }
-
-    // --- start polling for SOL price ---
-    fetchSolPrice();
-    setInterval(fetchSolPrice, SOL_PRICE_INTERVAL_MS);
 });
