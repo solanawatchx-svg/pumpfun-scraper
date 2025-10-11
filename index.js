@@ -48,9 +48,6 @@ app.get("/image-proxy", async (req, res) => {
   }
 });
 
-
-
-
 // ===============================
 // --- LIVE TOKENS ENDPOINT ---
 // ===============================
@@ -86,7 +83,6 @@ app.get("/sol-price", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch SOL price" });
   }
 });
-
 
 // ===============================
 // --- START SERVER ---
