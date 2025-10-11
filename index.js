@@ -74,6 +74,21 @@ app.get("/live-tokens", async (req, res) => {
   }
 });
 
+
+// ===============================
+// --- LIVE SOL PRICE ENDPOINT ---
+// ===============================
+app.get("/live-sol-price", async (req, res) => {
+    try {
+        const { data } = await axios.get("https://frontend-api-v3.pump.fun/sol-price", { timeout: 10000 });
+        res.json(data); // send JSON response to frontend
+    } catch (err) {
+        console.error("❌ Error fetching SOL price:", err.message);
+        res.status(500).json({ error: "Failed to fetch SOL price" });
+    }
+});
+
+
 // ===============================
 // --- START SERVER ---
 // ===============================
