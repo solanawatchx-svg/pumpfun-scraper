@@ -7,32 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const feedContainer = document.getElementById('token-feed');
     const statusElement = document.getElementById('status');
 
-    // ===============================
-// --- LIVE SOLANA PRICE ---
-// ===============================
-const solPriceElement = document.getElementById('sol-price-value');
-const SOL_PRICE_INTERVAL_MS = 4000;
-
-async function fetchSolPrice() {
-    try {
-        const response = await fetch('https://frontend-api-v3.pump.fun/sol-price');
-        if (!response.ok) throw new Error('Failed to fetch SOL price');
-
-        const data = await response.json();
-        if (data && data.price) {
-            solPriceElement.textContent = `$${parseFloat(data.price).toFixed(2)}`;
-        }
-    } catch (err) {
-        console.error("❌ SOL Price Fetch Error:", err);
-        solPriceElement.textContent = "Error";
-    }
-}
-
-// --- start polling for SOL price ---
-fetchSolPrice();
-setInterval(fetchSolPrice, SOL_PRICE_INTERVAL_MS);
-
-
     const formatNum = (n) =>
         n >= 1e6 ? `$${(n/1e6).toFixed(2)}M`
         : n >= 1e3 ? `$${(n/1e3).toFixed(1)}K`
