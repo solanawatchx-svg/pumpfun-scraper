@@ -48,6 +48,9 @@ app.get("/image-proxy", async (req, res) => {
   }
 });
 
+
+
+
 // ===============================
 // --- LIVE TOKENS ENDPOINT ---
 // ===============================
@@ -68,19 +71,6 @@ app.get("/live-tokens", async (req, res) => {
   } catch (err) {
     console.error("❌ Error fetching live tokens:", err.message);
     res.status(500).json({ error: "Failed to fetch live tokens" });
-  }
-});
-
-// ===============================
-// --- SOL PRICE ENDPOINT ---
-// ===============================
-app.get("/sol-price", async (req, res) => {
-  try {
-    const { data } = await axios.get('https://frontend-api-v3.pump.fun/sol-price', { timeout: 10000 });
-    res.json(data);
-  } catch (err) {
-    console.error("❌ Error fetching SOL price:", err.message);
-    res.status(500).json({ error: "Failed to fetch SOL price" });
   }
 });
 
