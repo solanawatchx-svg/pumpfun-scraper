@@ -74,6 +74,29 @@ app.get("/live-tokens", async (req, res) => {
   }
 });
 
+
+// ===============================
+// --- LIVE SOL PRICE ENDPOINT ---
+// ===============================
+app.get("/sol-price", async (req, res) => {
+  try {
+    const response = await fetch("https://frontend-api-v3.pump.fun/sol-price", {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; SolanaWatchX/1.0)"
+      }
+    });
+    if (!response.ok) throw new Error("Failed to fetch SOL price");
+
+    const data = await response.json();
+    res.json({ price: data.price });
+  } catch (err) {
+    console.error("❌ Error fetching SOL price:", err.message);
+    res.status(500).json({ error: "Failed to fetch SOL price" });
+  }
+});
+
+
+
 // ===============================
 // --- START SERVER ---
 // ===============================
