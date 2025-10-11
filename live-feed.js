@@ -124,10 +124,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return card;
     }
 
-    // --- start polling ---
+    // --- start polling for tokens ---
     fetchLiveTokens();
     setInterval(fetchLiveTokens, POLLING_INTERVAL_MS);
-});
 
     // ===============================
     // --- LIVE SOL PRICE FEED ---
@@ -137,6 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchSolPrice() {
         try {
+            // If you want to use your backend proxy, change the URL to '/sol-price'
             const response = await fetch('https://frontend-api-v3.pump.fun/sol-price');
             if (!response.ok) throw new Error('Failed to fetch SOL price');
 
@@ -154,6 +154,4 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- start polling for SOL price ---
     fetchSolPrice();
     setInterval(fetchSolPrice, SOL_PRICE_INTERVAL_MS);
-
-    // ... rest of your live-feed.js code ...
 });
