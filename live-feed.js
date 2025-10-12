@@ -46,9 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 creationTime: t.creationTime
             }));
 
-            // Sort tokens by creationTime (newest first)
-            data.sort((a, b) => b.creationTime - a.creationTime);
-
 
             const newTokens = data.filter(t => !displayedTokens.has(t.coinMint));
             if (newTokens.length === 0) return;
