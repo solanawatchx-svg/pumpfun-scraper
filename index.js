@@ -69,6 +69,9 @@ app.get("/live-tokens", async (req, res) => {
       }
     }
 
+    // Sort tokens by creationTime (newest first)
+    uniqueTokens.sort((a, b) => b.creationTime - a.creationTime);
+    
     // Rewrite image URLs to go through proxy
     const mappedTokens = uniqueTokens.map(t => ({
       ...t,
