@@ -50,10 +50,11 @@ app.get("/image-proxy", async (req, res) => {
 
 
 // ===============================
-// --- LIVE TOKENS ENDPOINT (Cleaned + Memory Cache) ---
+// --- LIVE TOKENS ENDPOINT (Clean + Accurate) ---
 // ===============================
 const recentMints = new Set();
 let mintHistory = []; // track last 1000 tokens
+const MAX_CACHE = 1000;
 
 app.get("/live-tokens", async (req, res) => {
   try {
@@ -61,39 +62,43 @@ app.get("/live-tokens", async (req, res) => {
 
     const tokens = Array.isArray(data)
       ? data
-      : data.coins || data.data || [];
+      : data.coins || [];
 
-    // --- Filter out any duplicate tokens (already seen in last 1000) ---
-    const freshTokens = tokens.filter(t => !recentMints.has(t.mint));
+    // --- Dedupe using correct key: coinMint ---
+    const freshTokens = tokens.filter(t => !recentMints.has(t.coinMint));
 
-    // --- Update memory with these new tokens ---
+    // --- Update memory ---
     freshTokens.forEach(t => {
-      recentMints.add(t.mint);
-      mintHistory.push(t.mint);
+      recentMints.add(t.coinMint);
+      mintHistory.push(t.coinMint);
     });
 
-    // --- Keep only the last 1000 tokens in memory ---
-    if (mintHistory.length > 1000) {
-      const removeCount = mintHistory.length - 1000;
-      const toRemove = mintHistory.splice(0, removeCount);
-      toRemove.forEach(m => recentMints.delete(m));
+    // --- Keep memory light (max 1000 entries) ---
+    if (mintHistory.length > MAX_CACHE) {
+      const overflow = mintHistory.splice(0, mintHistory.length - MAX_CACHE);
+      overflow.forEach(m => recentMints.delete(m));
     }
 
-    // --- Map tokens for frontend ---
+    // --- Map clean response for frontend ---
     const mappedTokens = freshTokens.map(t => ({
-      coinMint: t.mint,
+      coinMint: t.coinMint,
       name: t.name,
-      ticker: t.symbol,
-      imageUrl: t.image
-        ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.image)}`
+      ticker: t.ticker,
+      imageUrl: t.imageUrl
+        ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.imageUrl)}`
         : null,
-      marketCap: t.marketCapUsd,
-      volume: t.usdVolume,
+      marketCap: t.marketCap,
+      volume: t.volume,
       twitter: t.twitter,
       telegram: t.telegram,
       website: t.website,
-      creationTime: t.createdTimestamp
+      creationTime: t.creationTime
     }));
+
+    // --- Sort by creation time descending (newest first) ---
+    mappedTokens.sort((a, b) => b.creationTime - a.creationTime);
+
+    console.log(`🆕 Sent ${mappedTokens.length} new tokens, cache size = ${recentMints.size}`);
 
     res.json({ tokens: mappedTokens });
   } catch (err) {
@@ -101,6 +106,7 @@ app.get("/live-tokens", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch live tokens" });
   }
 });
+
 
 
 // ===============================
