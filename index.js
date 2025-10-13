@@ -11,6 +11,9 @@ const ENDPOINTS = {
   //graduated: "https://advanced-api-v2.pump.fun/coins/list?graduated=true&sortBy=creationTime&limit=100&offset=0"
 };
 
+// Store the coinMints of the last batch sent to the frontend (in memory)
+let lastBatchCoinMints = new Set();
+
 // ===============================
 // --- IMAGE PROXY ---
 // ===============================
@@ -69,16 +72,22 @@ app.get("/live-tokens", async (req, res) => {
       }
     }
 
-    // Sort tokens by creationTime (newest first)
-    uniqueTokens.sort((a, b) => b.creationTime - a.creationTime);
-    
-    // Rewrite image URLs to go through proxy
-    const mappedTokens = uniqueTokens.map(t => ({
-      ...t,
-      imageUrl: t.imageUrl
-        ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.imageUrl)}`
-        : null
-    }));
+// Sort tokens by creationTime (newest first)
+uniqueTokens.sort((a, b) => b.creationTime - a.creationTime);
+
+// Filter out tokens already sent in the last batch
+const newTokens = uniqueTokens.filter(t => !lastBatchCoinMints.has(t.coinMint));
+
+// Rewrite image URLs to go through proxy
+const mappedTokens = newTokens.map(t => ({
+  ...t,
+  imageUrl: t.imageUrl
+    ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.imageUrl)}`
+    : null
+}));
+
+// Update lastBatchCoinMints to current batch's coinMints for next time
+lastBatchCoinMints = new Set(uniqueTokens.map(t => t.coinMint));
 
     res.json({ tokens: mappedTokens });
   } catch (err) {
