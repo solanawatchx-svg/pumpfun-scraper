@@ -70,7 +70,7 @@ app.get("/live-tokens", async (req, res) => {
     }
 
     // Rewrite image URLs to go through proxy
-    const mappedTokens = tokens.map(t => ({
+    const mappedTokens = uniqueTokens.map(t => ({
       ...t,
       imageUrl: t.imageUrl
         ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.imageUrl)}`
