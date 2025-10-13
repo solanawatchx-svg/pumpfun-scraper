@@ -59,6 +59,16 @@ app.get("/live-tokens", async (req, res) => {
     const { data } = await axios.get(ENDPOINTS.scan, { timeout: 15000 });
     const tokens = Array.isArray(data) ? data : data.coins || data.data || [];
 
+    // Remove duplicate tokens by address
+    const seenAddresses = new Set();
+    const uniqueTokens = [];
+    for (const t of tokens) {
+      if (t.address && !seenAddresses.has(t.address)) {
+        seenAddresses.add(t.address);
+        uniqueTokens.push(t);
+      }
+    }
+
     // Rewrite image URLs to go through proxy
     const mappedTokens = tokens.map(t => ({
       ...t,
