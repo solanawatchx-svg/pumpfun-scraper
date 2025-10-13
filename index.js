@@ -63,8 +63,8 @@ app.get("/live-tokens", async (req, res) => {
     const seenAddresses = new Set();
     const uniqueTokens = [];
     for (const t of tokens) {
-      if (t.address && !seenAddresses.has(t.address)) {
-        seenAddresses.add(t.address);
+      if (t.coinMint && !seenAddresses.has(t.coinMint)) {
+        seenAddresses.add(t.coinMint);
         uniqueTokens.push(t);
       }
     }
