@@ -49,22 +49,50 @@ app.get("/image-proxy", async (req, res) => {
 });
 
 
-
-
 // ===============================
-// --- LIVE TOKENS ENDPOINT ---
+// --- LIVE TOKENS ENDPOINT (Cleaned + Memory Cache) ---
 // ===============================
+const recentMints = new Set();
+let mintHistory = []; // track last 1000 tokens
+
 app.get("/live-tokens", async (req, res) => {
   try {
     const { data } = await axios.get(ENDPOINTS.scan, { timeout: 15000 });
-    const tokens = Array.isArray(data) ? data : data.coins || data.data || [];
 
-    // Rewrite image URLs to go through proxy
-    const mappedTokens = tokens.map(t => ({
-      ...t,
-      imageUrl: t.imageUrl
-        ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.imageUrl)}`
-        : null
+    const tokens = Array.isArray(data)
+      ? data
+      : data.coins || data.data || [];
+
+    // --- Filter out any duplicate tokens (already seen in last 1000) ---
+    const freshTokens = tokens.filter(t => !recentMints.has(t.mint));
+
+    // --- Update memory with these new tokens ---
+    freshTokens.forEach(t => {
+      recentMints.add(t.mint);
+      mintHistory.push(t.mint);
+    });
+
+    // --- Keep only the last 1000 tokens in memory ---
+    if (mintHistory.length > 1000) {
+      const removeCount = mintHistory.length - 1000;
+      const toRemove = mintHistory.splice(0, removeCount);
+      toRemove.forEach(m => recentMints.delete(m));
+    }
+
+    // --- Map tokens for frontend ---
+    const mappedTokens = freshTokens.map(t => ({
+      coinMint: t.mint,
+      name: t.name,
+      ticker: t.symbol,
+      imageUrl: t.image
+        ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.image)}`
+        : null,
+      marketCap: t.marketCapUsd,
+      volume: t.usdVolume,
+      twitter: t.twitter,
+      telegram: t.telegram,
+      website: t.website,
+      creationTime: t.createdTimestamp
     }));
 
     res.json({ tokens: mappedTokens });
@@ -73,6 +101,7 @@ app.get("/live-tokens", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch live tokens" });
   }
 });
+
 
 // ===============================
 // --- START SERVER ---
