@@ -49,122 +49,30 @@ app.get("/image-proxy", async (req, res) => {
 });
 
 
-// ===============================
-// --- LIVE TOKENS ENDPOINT (Time-gated + Cache) ---
-// ===============================
-const MAX_CACHE = 1000;
-const recentMints = new Set();
-let mintHistory = [];
-let lastSeenCreationTime = 0; // epoch ms of the newest token we've sent
 
-// helper to reset cache during testing
-app.get("/live-tokens-reset-cache", (req, res) => {
-  recentMints.clear();
-  mintHistory = [];
-  lastSeenCreationTime = 0;
-  console.log("🔁 live-tokens cache reset");
-  res.json({ ok: true });
-});
 
+// ===============================
+// --- LIVE TOKENS ENDPOINT ---
+// ===============================
 app.get("/live-tokens", async (req, res) => {
   try {
     const { data } = await axios.get(ENDPOINTS.scan, { timeout: 15000 });
-    const tokensRaw = Array.isArray(data) ? data : data.coins || data.data || [];
+    const tokens = Array.isArray(data) ? data : data.coins || data.data || [];
 
-    // Normalize and ensure we have coinMint and creationTime
-    const normalized = tokensRaw.map(t => {
-      const coinMint = t.coinMint || t.mint || t.tokenMint || null;
-      // some responses use 'creationTime' (ms) — ensure it's a number
-      const creationTime = t.creationTime || t.createdTimestamp || t.fetchedAt || null;
-      return {
-        raw: t,
-        coinMint,
-        creationTime: creationTime ? Number(creationTime) : null
-      };
-    }).filter(x => x.coinMint && x.creationTime); // drop if no mint or no creationTime
+    // Rewrite image URLs to go through proxy
+    const mappedTokens = tokens.map(t => ({
+      ...t,
+      imageUrl: t.imageUrl
+        ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.imageUrl)}`
+        : null
+    }));
 
-    // sort newest first (defensive)
-    normalized.sort((a, b) => b.creationTime - a.creationTime);
-
-    // If this is the *very first* run (no cache), we will prime cache but still return the current list once.
-    const isFirstRun = recentMints.size === 0 && lastSeenCreationTime === 0;
-
-    // Collect candidates that are newer than lastSeenCreationTime OR same time but not yet cached
-    const candidates = [];
-    const seenInBatch = new Set();
-    for (const item of normalized) {
-      // skip duplicates within batch
-      if (seenInBatch.has(item.coinMint)) continue;
-      seenInBatch.add(item.coinMint);
-
-      if (isFirstRun) {
-        // On first run treat these as "current state" — include them (but also prime cache below)
-        candidates.push(item);
-      } else {
-        // only accept strictly newer creationTime, or equal time but mint wasn't sent before
-        if (item.creationTime > lastSeenCreationTime) {
-          candidates.push(item);
-        } else if (item.creationTime === lastSeenCreationTime && !recentMints.has(item.coinMint)) {
-          candidates.push(item);
-        } // else ignore older/equal already-seen tokens
-      }
-    }
-
-    // If nothing new, return empty quickly
-    if (candidates.length === 0) {
-      return res.json({ tokens: [] });
-    }
-
-    // Map candidates to frontend shape
-    const mapped = candidates.map(i => {
-      const t = i.raw;
-      const imageUrl = (t.imageUrl || t.image)
-        ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.imageUrl || t.image)}`
-        : null;
-      return {
-        coinMint: i.coinMint,
-        name: t.name || "",
-        ticker: t.ticker || t.symbol || "",
-        imageUrl,
-        marketCap: t.marketCap || t.allTimeHighMarketCap || t.marketCapUsd || 0,
-        volume: t.volume || t.usdVolume || 0,
-        twitter: t.twitter || null,
-        telegram: t.telegram || null,
-        website: t.website || null,
-        creationTime: i.creationTime
-      };
-    });
-
-    // Update cache: add coins we are about to send
-    for (const m of mapped) {
-      if (!recentMints.has(m.coinMint)) {
-        recentMints.add(m.coinMint);
-        mintHistory.push(m.coinMint);
-      }
-    }
-    // Trim cache
-    if (mintHistory.length > MAX_CACHE) {
-      const overflow = mintHistory.splice(0, mintHistory.length - MAX_CACHE);
-      for (const mm of overflow) recentMints.delete(mm);
-    }
-
-    // Update lastSeenCreationTime: set to max creationTime we just sent
-    const maxTime = Math.max(...mapped.map(x => x.creationTime));
-    if (maxTime > lastSeenCreationTime) lastSeenCreationTime = maxTime;
-
-    // Sort mapped newest first before sending (defensive)
-    mapped.sort((a, b) => b.creationTime - a.creationTime);
-
-    console.log(`🆕 Sent ${mapped.length} tokens; cache=${recentMints.size}; lastTime=${lastSeenCreationTime}`);
-
-    return res.json({ tokens: mapped });
+    res.json({ tokens: mappedTokens });
   } catch (err) {
-    console.error("❌ Error fetching live tokens:", err && err.message ? err.message : err);
-    return res.status(500).json({ error: "Failed to fetch live tokens" });
+    console.error("❌ Error fetching live tokens:", err.message);
+    res.status(500).json({ error: "Failed to fetch live tokens" });
   }
 });
-
-
 
 // ===============================
 // --- START SERVER ---
