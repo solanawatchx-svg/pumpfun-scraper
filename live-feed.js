@@ -6,8 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const displayedTokens = new Set();
     const feedContainer = document.getElementById('token-feed');
     const statusElement = document.getElementById('status');
-    const MAX_CARDS = 400;       // how many DOM cards to keep (doesn't affect displayedTokens memory)
-    let isFetching = false; 
 
     const formatNum = (n) =>
         n >= 1e6 ? `$${(n/1e6).toFixed(2)}M`
@@ -21,98 +19,55 @@ document.addEventListener("DOMContentLoaded", () => {
             : `${Math.floor(minutes/60)}h ${minutes%60}m ago`;
     };
 
-// add near top of file (inside same scope as POLLING_INTERVAL_MS)
-const MAX_CARDS = 400;       // how many DOM cards to keep (doesn't affect displayedTokens memory)
-let isFetching = false;      // prevent overlapping requests
-
-// --- improved fetchLiveTokens ---
-async function fetchLiveTokens() {
-    if (isFetching) return; // avoid concurrent runs
-    isFetching = true;
-
-    try {
-        if (statusElement) {
+    async function fetchLiveTokens() {
+        try {
             statusElement.style.display = 'block';
             statusElement.textContent = 'Fetching live tokens...';
-        }
+            
+            const response = await fetch('https://api.solanawatchx.site/live-tokens');
+            if (!response.ok) throw new Error('Failed to fetch live tokens');
 
-        const response = await fetch('https://api.solanawatchx.site/live-tokens');
-        if (!response.ok) throw new Error('Failed to fetch live tokens');
+            const { tokens: rawData } = await response.json();
+            statusElement.style.display = 'none';
 
-        const { tokens: rawData } = await response.json();
-        if (statusElement) statusElement.style.display = 'none';
-
-        if (!Array.isArray(rawData) || rawData.length === 0) {
-            isFetching = false;
-            return;
-        }
-
-        // Normalize and sort locally by creationTime (newest first) — defensive
-        const data = rawData
-            .map(t => ({
+            // Filter only required fields for frontend
+            const data = rawData.map(t => ({
                 coinMint: t.coinMint,
                 name: t.name,
                 ticker: t.ticker,
-                imageUrl: t.imageUrl ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.imageUrl)}` : null,
+                imageUrl: t.imageUrl
+                    ? `https://api.solanawatchx.site/image-proxy?url=${encodeURIComponent(t.imageUrl)}`
+                    : null,
                 marketCap: t.marketCap,
                 volume: t.volume,
                 twitter: t.twitter,
                 telegram: t.telegram,
                 website: t.website,
-                creationTime: Number(t.creationTime) || 0
-            }))
-            .sort((a, b) => b.creationTime - a.creationTime);
+                creationTime: t.creationTime
+            }));
 
-        // Filter out tokens we already showed
-        const newTokens = data.filter(t => !displayedTokens.has(t.coinMint));
-        if (newTokens.length === 0) {
-            isFetching = false;
-            return;
+
+            const newTokens = data.filter(t => !displayedTokens.has(t.coinMint));
+            if (newTokens.length === 0) return;
+
+            newTokens.forEach(t => displayedTokens.add(t.coinMint));
+
+            // trim feed if > 2000
+            if (displayedTokens.size > 2000) {
+                displayedTokens.clear();
+                feedContainer.innerHTML = "";
+            }
+
+            for (let i = newTokens.length - 1; i >= 0; i--) {
+                const tokenElement = createTokenElement(newTokens[i]);
+                feedContainer.prepend(tokenElement);
+                tokenElement.classList.add('new-token-animation');
+            }
+        } catch (err) {
+            console.error("❌ Fetch Error:", err);
+            statusElement.innerHTML = `<span>Connection failed. Retrying...</span>`;
         }
-
-        // Mark them as displayed (do NOT remove from this set later)
-        newTokens.forEach(t => displayedTokens.add(t.coinMint));
-
-        // Build fragment (old -> new order preserved)
-        const fragment = document.createDocumentFragment();
-        // we want newest first on top; newTokens is sorted newest->oldest.
-        // To prepend them in correct order we iterate from last to first and prepend each,
-        // OR create nodes in order and prepend the whole fragment. We'll append to fragment
-        // in reverse so that when we prepend fragment the order remains newest->oldest.
-        for (let i = newTokens.length - 1; i >= 0; i--) {
-            const node = createTokenElement(newTokens[i]);
-            node.style.opacity = '0';
-            fragment.prepend(node); // keep same final order when fragment is prepended
-        }
-
-        // Insert all at once
-        feedContainer.prepend(fragment);
-
-        // animate new ones and set opacity to 1
-        requestAnimationFrame(() => {
-            newTokens.forEach(t => {
-                const el = feedContainer.querySelector(`[data-mint="${t.coinMint}"]`);
-                if (el) {
-                    el.classList.add('new-token-animation');
-                    el.style.opacity = '1';
-                }
-            });
-        });
-
-        // Trim DOM only (don't touch displayedTokens set)
-        while (feedContainer.children.length > MAX_CARDS) {
-            feedContainer.removeChild(feedContainer.lastChild);
-            // do NOT delete from displayedTokens — that keeps duplicates away
-        }
-
-    } catch (err) {
-        console.error("❌ Fetch Error:", err);
-        if (statusElement) statusElement.innerHTML = `<span>Connection failed. Retrying...</span>`;
-    } finally {
-        isFetching = false;
     }
-}
-
 
     function createTokenElement(token) {
         const card = document.createElement('div');
