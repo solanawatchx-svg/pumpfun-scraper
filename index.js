@@ -18,8 +18,6 @@ const SOL_PRICE_CACHE_DURATION = 10 * 1000; // 10 seconds
 
 const ENDPOINTS = {
   scan: "https://advanced-api-v2.pump.fun/coins/list?sortBy=creationTime&limit=100&offset=0",
-  //byMarketCap: "https://advanced-api-v2.pump.fun/coins/list?sortBy=marketCap&limit=100&offset=0",
-  //graduated: "https://advanced-api-v2.pump.fun/coins/list?graduated=true&sortBy=creationTime&limit=100&offset=0"
 };
 
 // Store the coinMints of the last batch sent to the frontend (in memory)
@@ -28,7 +26,6 @@ let lastBatchCoinMints = new Set();
 // ===============================
 // --- IMAGE PROXY ---
 // ===============================
-// (Unchanged)
 app.get("/image-proxy", async (req, res) => {
   try {
     let targetUrl = req.query.url;
@@ -64,7 +61,6 @@ app.get("/image-proxy", async (req, res) => {
 // ===============================
 // --- SOL-PRICE ENDPOINT ---
 // ===============================
-// (Unchanged - fetches and caches SOL price)
 app.get("/sol-price", async (req, res) => {
   try {
     if (cachedSolPrice && Date.now() - lastSolPriceFetch < SOL_PRICE_CACHE_DURATION) {
@@ -157,7 +153,7 @@ app.get("/live-tokens", async (req, res) => {
       }
     }
 
-    // Rewrite image URLs to go through proxy and SELECT ONLY REQUIRED FIELDS
+    // Explicitly select ONLY the required fields for the response
     const mappedTokens = newTokens.map(t => ({
       coinMint: t.coinMint,
       name: t.name,
@@ -171,7 +167,7 @@ app.get("/live-tokens", async (req, res) => {
       telegram: t.telegram,
       website: t.website,
       creationTime: t.creationTime,
-      liquidity_usd: t.liquidity_usd  // NEW: Include the calculated liquidity value
+      liquidity_usd: t.liquidity_usd
     }));
 
     // Update lastBatchCoinMints to current batch's coinMints
